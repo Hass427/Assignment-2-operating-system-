@@ -1,0 +1,358 @@
+# BASIC FORKS AND C STYLE DEVELOPMENT - ANSWERS
+** Lab 5: Process Management**
+
+**Author:** Hassan Yasser Elgouhary
+
+
+
+# PART 1: CODE EXAMPLES FROM LAB 5
+
+## 1. process_creation.c (Exercise 1: Using fork() in C)
+
+**Code:**
+
+```c
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        printf("This is the child process. PID: %d\n", getpid());
+    } else if (pid > 0) {
+        printf("This is the parent process. PID: %d\n", getpid());
+    } else {
+        printf("Fork failed!\n");
+    }
+
+    return 0;
+}
+```
+
+**Explanation:**
+
+- `stdio.h` allows us to use `printf()`.
+- `unistd.h` gives us functions like `fork()` and `getpid()`.
+- `fork()` creates a new process called the child process.
+- After `fork()`, we have two processes: the parent and the child.
+
+The `fork()` function returns different values:
+
+- `0`: This means we are in the child process.
+- A number greater than `0`: This means we are in the parent process. The number is the child's PID.
+- `-1`: This means the process creation failed.
+
+**What does the code do?**
+
+If the value is `0`, the child prints its message.
+
+If the value is greater than `0`, the parent prints its message.
+
+`getpid()` gets the ID of the process that is running.
+
+**Example Output:**
+
+```text
+This is the parent process. PID: 4121
+This is the child process. PID: 4122
+```
+
+The numbers may change every time we run the program.
+
+**Note:** The parent and child can print in any order because the operating system decides which process runs first.
+
+---
+
+## 2. Exercises 2, 3 and 4 (Process Commands)
+
+These exercises use Linux terminal commands, not C code.
+
+### Exercise 2: Start a Process in the Background
+
+**Commands:**
+
+```bash
+sleep 300 &
+jobs
+```
+
+**Explanation:**
+
+- `sleep 300` runs a process that waits for 300 seconds.
+- `&` makes the process run in the background.
+- `jobs` shows the background processes in the current terminal.
+
+This means we can use the terminal while the process is still running.
+
+### Exercise 3: Stop a Process
+
+**Commands:**
+
+```bash
+ps aux | grep sleep
+kill PID
+ps aux | grep sleep
+```
+
+**Explanation:**
+
+- `ps aux` shows the running processes.
+- `grep sleep` searches for processes with the word `sleep`.
+- `kill PID` sends a signal to stop the process. Replace `PID` with the real process ID.
+- The last command checks if the process has stopped.
+
+The `grep` command may also appear in the results. This is normal.
+
+### Exercise 4: Pause and Continue a Process
+
+**Commands:**
+
+```bash
+kill -STOP PID
+kill -CONT PID
+```
+
+**Explanation:**
+
+- `kill -STOP PID` pauses the process.
+- The process stays in memory but stops running.
+- `kill -CONT PID` continues the process from where it stopped.
+
+---
+
+## 3. file1.c and file2.c (Exercise 5: Role of the Linker)
+
+### file1.c
+
+```c
+#include <stdio.h>
+
+void hello() {
+    printf("Hello from file1!\n");
+}
+```
+
+### file2.c
+
+```c
+void hello();
+
+int main() {
+    hello();
+    return 0;
+}
+```
+
+**Explanation:**
+
+- `file1.c` contains the real function called `hello()`.
+- This function prints the message `Hello from file1!`.
+- `file2.c` contains the `main()` function.
+- `void hello();` tells the program that the function exists in another file.
+- `hello();` calls that function.
+
+**How do we run the two files together?**
+
+First, we use this command:
+
+```bash
+gcc file1.c file2.c -o output_program
+```
+
+Then, we run the program:
+
+```bash
+./output_program
+```
+
+**Output:**
+
+```text
+Hello from file1!
+```
+
+**Task: Change one file and test the linker.**
+
+We can change the message in `file1.c` to:
+
+```c
+printf("Hello from the new file1!\n");
+```
+
+Then compile and run the program again.
+
+The new message will appear even though we did not change `file2.c`.
+
+This happens because the linker connects the function in `file1.c` with the function call in `file2.c`.
+
+If we delete or rename the `hello()` function, the linker will show an error because it cannot find that function.
+
+---
+
+## 4. simple_program.c (Exercise 6: Role of the Loader)
+
+**Code:**
+
+```c
+#include <stdio.h>
+
+int main() {
+    printf("This is a simple program.\n");
+    return 0;
+}
+```
+
+**Explanation:**
+
+- `stdio.h` allows us to use `printf()`.
+- `main()` is the starting point of the program.
+- `printf()` prints a message on the screen.
+- `return 0` means the program finished successfully.
+
+**How to compile and run it:**
+
+```bash
+gcc simple_program.c -o simple_program
+./simple_program
+```
+
+**Output:**
+
+```text
+This is a simple program.
+```
+
+**How to check the shared libraries?**
+
+We use:
+
+```bash
+ldd simple_program
+```
+
+This command shows the shared libraries needed by the program.
+
+**Example:**
+
+```text
+linux-vdso.so.1
+libc.so.6
+ld-linux-x86-64.so.2
+```
+
+**Explanation:**
+
+- `linux-vdso.so.1`: Helps the program perform some operations faster.
+- `libc.so.6`: The standard C library. It contains functions like `printf()`.
+- `ld-linux-x86-64.so.2`: Helps load the required shared libraries when the program starts.
+
+The addresses and output may be different on other computers.
+
+---
+
+# PART 2: THEORY
+
+## 1. What is the job of the Linker?
+
+The linker connects different object files and creates one executable program.
+
+For example, in our lab, `file1.c` contains the `hello()` function, and `file2.c` calls this function.
+
+The linker connects them so they can work together.
+
+**Main jobs of the linker:**
+
+1. **Symbol Resolution:** Finds the functions and variables used in other files.
+2. **Combining Files:** Connects different object files together.
+3. **Relocation:** Fixes the addresses used by the program.
+4. **Library Linking:** Connects the program with the libraries it needs.
+
+**In simple words:** The linker connects all the program parts and creates the final executable file.
+
+## 2. What is the job of the Loader?
+
+The loader is part of the operating system. Its job is to load the program into memory and prepare it to run.
+
+**Main jobs of the loader:**
+
+1. Reads the executable file.
+2. Loads the program code into memory.
+3. Prepares memory for the program.
+4. Loads the shared libraries needed by the program.
+5. Starts the program.
+
+**In simple words:**
+
+- The linker connects the files and creates the program.
+- The loader puts the program into memory and starts it.
+
+**Program steps:**
+
+```text
+Source Code
+     |
+  Compiler
+     |
+ Object Code
+     |
+   Linker
+     |
+ Executable File
+     |
+   Loader
+     |
+   Memory
+```
+
+---
+
+# PART 3: THE MAKEFILE
+
+A Makefile helps us compile our programs easily.
+
+Instead of writing the `gcc` command every time, we can use `make`.
+
+**Main variables:**
+
+- `CC = gcc`: Tells Make to use the GCC compiler.
+- `CFLAGS = -Wall -Wextra -g`: Enables warnings and debugging information.
+- `PROGRAMS`: Contains the names of the programs we want to build.
+
+**Main commands (Targets):**
+
+- `all`: Builds all programs.
+- `process_creation`: Compiles `process_creation.c`.
+- `output_program`: Compiles `file1.c` and `file2.c` together.
+- `simple_program`: Compiles `simple_program.c`.
+- `run`: Builds and runs all programs.
+- `ldd`: Shows the shared libraries used by `simple_program`.
+- `clean`: Deletes the compiled programs.
+- `.PHONY`: Tells Make that some target names are commands, not actual files.
+
+**How to use the Makefile:**
+
+```bash
+make
+```
+Builds all programs.
+
+```bash
+make run
+```
+Builds and runs all programs.
+
+```bash
+make ldd
+```
+Shows the shared libraries.
+
+```bash
+make clean
+```
+Deletes the compiled files.
+
+**Note:** `make` only compiles a program again when its source files have changed.
+
+
+
